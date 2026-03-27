@@ -5,18 +5,18 @@
 > **Keep this block short and current.** Update it at the end of every session.
 > This is the first thing Gemini reads — make it worth reading.
 
-**Status**: NOT STARTED
-**Active milestone**: M1 — [Milestone name]
-**Last session**: [YYYY-MM-DD]
+**Status**: STARTED
+**Active milestone**: M1 — The "Human" Editor (COMPLETED)
+**Last session**: 2026-03-27
 
 **Next actions**:
-- [ ] [The first concrete thing to do next session]
-- [ ] [The second thing]
-- [ ] [The third thing, if known]
+- [ ] Refine the "Soft Flag" logic in `js/app.js` to store all flags for the final report
+- [ ] Implement timestamped "Writing Timeline" snapshots in `localStorage` (M2)
+- [ ] Design the "Authenticity Report" layout (M3)
 
 **Open questions**:
-- [Any unresolved technical or design decisions]
-- [Any user-facing questions that need answering before proceeding]
+- [x] How should we handle "Copy-Paste" events in M2—should we block them or just flag them? (Decision: Soft Flag)
+- [ ] Which specific AI clichés should we prioritize for the M1 highlight?
 
 ---
 
@@ -27,64 +27,81 @@
 
 ### M0 — Project Initialization
 
-- [ ] Clone template repository
-- [ ] Fill in GEMINI.md project identity section
-- [ ] **Define AI Guardrails**: In `DECISIONS.md`, document how this project handles data privacy and human accountability.
-- [ ] Define milestones M1–M3 below
-- [ ] Push initial commit to GitHub
-- [ ] Enable GitHub Pages in repository settings
-- [ ] Confirm live URL is accessible
+- [x] Clone template repository
+- [x] Fill in GEMINI.md project identity section
+- [x] **Define AI Guardrails**: In `DECISIONS.md`, document how this project handles data privacy and human accountability.
+- [x] Define milestones M1–M3 below
 
-### M1 — [First Milestone Name]
+### M1 — The "Human" Editor
 
-*[One sentence: what can a user do or experience once this milestone is complete?]*
+*A clean, Minerva-branded text area that identifies generic or AI-sounding phrases as the user types.*
 
 **Values checklist**:
-- [ ] **Learning**: Deepens understanding & invites participation
-- [ ] **Agency**: Supports human control, not AI dependence
-- [ ] **Privacy**: Zero-trust for sensitive data (PII, student records)
-- [ ] **Transparency**: AI use disclosed & human-reviewed
+- [x] **Learning**: Deepens understanding of personal writing voice
+- [x] **Agency**: Prompts the user for evidence rather than generating it
+- [x] **Privacy**: All text stays in `localStorage` (Zero-Trust)
+- [x] **Transparency**: Real-time feedback on writing "humanness"
 
 **Acceptance criteria**:
-- [ ] [Criterion 1 — observable by a user]
-- [ ] [Criterion 2]
-- [ ] [Criterion 3]
+- [x] User can type in a professional, distraction-free editor
+- [x] System highlights at least 5 common AI "clichés" (e.g., "In conclusion," "It is important to note")
+- [x] Editor provides a sidebar with "Active Learning" prompts based on the highlighted text
 
-### M2 — [Second Milestone Name]
+### M2 — The "Process" Tracker
 
-*[Description]*
+*A background engine that tracks typing speed, bursts of activity, and pauses to prove the essay was written by a human.*
 
 **Values checklist**:
-- [ ] Learning
-- [ ] Agency
-- [ ] Privacy
-- [ ] Transparency
+- [ ] Agency: Empowers users to prove their own authorship
+- [x] Transparency: Disclosure of what data is being tracked (speed/timing)
 
 **Acceptance criteria**:
-- [ ] [Criterion]
+- [/] Real-time "Words Per Minute" (WPM) tracking (Implemented basic calc)
+- [x] Detection of "Soft Flag" anomalies (pastes over 50 characters)
+- [ ] Saving of a timestamped "Writing Timeline" to `localStorage`
 
-### M3 — [Third Milestone Name]
+### M3 — The "Authenticity Report"
 
-*[Description]*
+*A visual summary of the writing process that an applicant can review and share.*
 
 **Values checklist**:
-- [ ] Learning
-- [ ] Agency
-- [ ] Privacy
-- [ ] Transparency
+- [ ] Learning: Reflective summary of the writing journey
+- [ ] Transparency: Clearly shows the "Human vs. AI" signals in the process
 
 **Acceptance criteria**:
-- [ ] [Criterion]
-
-<!-- Add milestones as the project grows. Keep acceptance criteria user-observable. -->
+- [ ] A "Timeline of Thought" chart showing writing progress over time
+- [ ] An "Authenticity Score" based on consistency of speed and lack of cliches
+- [ ] A printable/exportable summary for Admissions submission
 
 ---
 
 ## Session Log
 
-> Append a brief entry after each session. Never edit past entries.
-> Format: what state you found, what you did, what state you left it in.
-> **Disclosure**: Use the [Minerva Disclosure Template](#disclosure-template) below for significant AI-assisted work.
+---
+
+### 2026-03-27: UI Shell & Cliché Detection
+
+**AI Tool(s) Used**: Gemini CLI
+**Purpose**: UI development and basic logic implementation
+**Modifications & Verification**: 
+- Created grid-based editor layout in `index.html`.
+- Styled with Minerva branding in `css/styles.css`.
+- Implemented `js/app.js` with:
+    - WPM and word count tracking.
+    - Cliché scanning (sidebar alerts).
+    - Soft flag for copy-paste anomalies.
+**Learning Reflection**: Focusing on the sidebar for alerts rather than inline highlighting keeps the focus on the *thought process* rather than just "fixing" the text, which aligns with Minerva's active learning values.
+**Session Link/Context**: Implementation of M1 and start of M2.
+
+---
+
+### 2026-03-27: Project Setup
+
+**AI Tool(s) Used**: Gemini CLI
+**Purpose**: Ideation and project initialization
+**Modifications & Verification**: Defined "Human Voice Lab" identity and milestones. Updated GEMINI.md and SCRATCHPAD.md. Logged Decision 003 (Soft Flag for Paste).
+**Learning Reflection**: Collaborative ideation helped focus the project on the intersection of technical tracking and ethical authorship.
+**Session Link/Context**: Initial setup conversation.
 
 ---
 
@@ -97,7 +114,3 @@
 **Modifications & Verification**: [What did you change? How did you verify the AI's accuracy?]
 **Learning Reflection**: [What value did this AI use add to your learning or work quality?]
 **Session Link/Context**: [Briefly describe the chat session or provide a link if possible]
-
----
-
-<!-- First entry goes here after your first working session. -->

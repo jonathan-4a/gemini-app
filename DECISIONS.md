@@ -43,4 +43,19 @@
 3. **Mandatory Disclosure**: AI use is logged in `SCRATCHPAD.md`.
 **Trade-offs**: Development may be slower due to mandatory human review and documentation overhead, but the resulting system is more ethical, secure, and aligned with institutional values.
 
+## Decision 003 — Soft Flag for Copy-Paste Events
+
+**Date**: 2026-03-27
+**Decision**: Allow users to paste text into the editor but highlight it as a potential anomaly in the "Authenticity Report."
+**Rationale**: Hard-blocking paste events can be frustrating (e.g., if a user is moving a sentence they wrote elsewhere). A "Soft Flag" preserves **Human Agency** while maintaining **Transparency**—the user is informed that the action will be noted in the final report, but they aren't stopped from doing it.
+**Alternatives considered**: Hard Block (preventing all paste events)
+**Trade-offs**: We gain a smoother user experience and trust-building; we give up the absolute certainty that every single character was typed inside the app.
+
+**Guardrails Alignment**:
+- **Privacy & IP**: No data leaves the browser; flags are stored locally.
+- **Disclosure**: The app will clearly inform the user when a paste event is flagged.
+- **Responsibility**: The user is responsible for their own writing process and how they choose to use the tool.
+- **Bias & Trust**: This approach builds trust by not "policing" the user but instead providing a transparent report of their process.
+- **Values**: Aligns with **Human Agency** and **Clarity over Cleverness**.
+
 <!-- Add new decisions below, incrementing the number. -->

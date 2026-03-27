@@ -2,13 +2,13 @@
 
 ## Project Identity
 
-**Name**: [Your App Name]
-**Purpose**: [One sentence — what does this app do, and why does it matter to the people who use it?]
-**Audience**: [Who uses this? What do they already know, and what are they trying to do?]
-**Human context**: [What changes in how people think, learn, or act because this app exists?]
+**Name**: Human Voice Lab
+**Purpose**: A specialized text editor that helps Minerva applicants maintain their authentic voice by identifying AI-style generic language and tracking their real-time writing process (speed, bursts, and timeline) to provide empirical evidence of human authorship.
+**Audience**: Minerva Applicants and Admissions Staff.
+**Human context**: Applicants gain confidence in their own unique voice, while admissions staff get a "transparency report" that proves the essay was crafted through human thought and iteration, not a single AI prompt.
 
-**GitHub repo**: [username/repo-name]
-**Live URL**: [https://username.github.io/repo-name]
+**GitHub repo**: [Not Provided]
+**Live URL**: [Not Provided]
 
 ## Tech Stack
 
