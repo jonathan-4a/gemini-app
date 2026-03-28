@@ -3,23 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>[Your App Name] — Minerva University</title>
+    <title>Human Voice Lab — Minerva University</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <header>
         <div class="container">
-            <h1>[Your App Name]</h1>
-            <p class="subtitle">[One-sentence purpose]</p>
+            <h1>Human Voice Lab</h1>
+            <p class="subtitle">Evidence of authorship through real-time process tracking.</p>
         </div>
     </header>
 
     <main class="container">
-        <!-- Students will build their app here -->
-        <section id="app-placeholder">
-            <h2>Ready to start?</h2>
-            <p>Tell Gemini what your first milestone is, or ask: "What should we build first for [App Name]?"</p>
-        </section>
+        <div class="editor-layout">
+            <section class="editor-main">
+                <div class="editor-header">
+                    <h2>Draft your Essay</h2>
+                    <div id="session-controls">
+                        <button id="start-session-btn" class="btn-primary">Start Writing Session</button>
+                    </div>
+                    <div id="stats-bar" class="stats-bar hidden">
+                        <span id="timer">00:00</span>
+                        <span id="word-count">0 words</span>
+                        <span id="unique-words">0 unique</span>
+                        <span id="wpm">0 WPM</span>
+                        <span id="status-indicator" class="status-indicator">● Session Active</span>
+                        <button id="finish-session-btn" class="btn-secondary">Finish & Export</button>
+                    </div>
+                </div>
+                <!-- Selection menu for HC Tagging -->
+                <div id="hc-menu" class="hc-menu hidden">
+                    <span>Tag with HC:</span>
+                    <button class="hc-tag" data-hc="#algorithms">#algorithms</button>
+                    <button class="hc-tag" data-hc="#self-awareness">#self-awareness</button>
+                    <button class="hc-tag" data-hc="#critical-thinking">#critical-thinking</button>
+                    <button class="hc-tag" data-hc="#global-citizenship">#global-citizenship</button>
+                </div>
+                <div id="editor" class="text-editor disabled" contenteditable="false" placeholder="Click 'Start' to begin your forensic writing session..."></div>
+            </section>
+
+            <aside class="editor-sidebar">
+                <div class="sidebar-card">
+                    <h3>Writing Rhythm</h3>
+                    <div id="speed-graph" class="speed-graph">
+                        <!-- Bars will be injected here via JS -->
+                    </div>
+                    <div id="authenticity-summary" class="stats-summary">
+                        <div class="stat-row">
+                            <span>Process Flags:</span>
+                            <span id="flag-count" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span>"Deep Thought" Pauses:</span>
+                            <span id="pause-count" class="stat-value">0</span>
+                        </div>
+                        <div id="flag-alerts" class="flag-alerts"></div>
+                    </div>
+                </div>
+
+                <div class="sidebar-card">
+                    <h3>Voice Insights</h3>
+                    <div id="cliche-alerts" class="alerts-list">
+                        <p class="empty-msg">Start typing to see voice analysis...</p>
+                    </div>
+                </div>
+                <div class="sidebar-card">
+                    <h3>Active Learning Prompts</h3>
+                    <div id="prompts-list" class="prompts-list">
+                        <p class="empty-msg">Add evidence of learning to see prompts.</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
     </main>
 
     <footer>
