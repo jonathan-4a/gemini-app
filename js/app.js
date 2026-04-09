@@ -1,6 +1,6 @@
 /**
  * app.js — Human Voice Lab
- * High-Resolution Forensic Suite
+ * High-Resolution Forensic Suite with Session Recovery
  */
 
 const state = {
@@ -20,25 +20,61 @@ const state = {
   cliches: [
     "In conclusion", "Furthermore", "Ultimately", "Think of it as", "Game-changer",
     "It's important to note", "In today's digital age", "Navigating the complexities",
-    "A testament to", "Diving deep into", "Delving into", "Unlocking the potential",
-    "In essence", "At the end of the day", "Looking ahead", "It's worth mentioning"
+    "A testament to", "Diving deep into", "Delving into", "Unlocking the potential"
   ],
   lastSnapshotWordCount: 0,
-  tags: [] 
+  tags: [],
+  // Advanced Metrics
+  lastKeyEventTime: null,
+  keystrokeLatencies: [],
+  deletions: 0,
+  totalCharsTyped: 0,
+  revisionHistory: []
 };
 
 function init() {
   document.getElementById('start-session-btn').addEventListener('click', startSession);
   document.getElementById('finish-session-btn').addEventListener('click', finishSession);
+  document.getElementById('restore-session-btn').addEventListener('click', restoreSession);
   
   const editor = document.getElementById('editor');
   editor.addEventListener('input', handleInput);
+  editor.addEventListener('keydown', handleKeydown);
   editor.addEventListener('paste', handlePaste);
   editor.addEventListener('mouseup', handleTextSelection); 
 
   document.querySelectorAll('.hc-tag').forEach(btn => {
     btn.addEventListener('click', (e) => tagSelection(e.target.dataset.hc));
   });
+
+  // Check for existing draft
+  const savedDraft = localStorage.getItem('hvl_draft');
+  if (savedDraft) {
+    document.getElementById('restore-session-btn').classList.remove('hidden');
+  }
+}
+
+function handleKeydown(e) {
+  if (!state.isSessionActive) return;
+
+  const now = Date.now();
+  
+  // Keystroke Dynamics
+  if (state.lastKeyEventTime) {
+    const latency = now - state.lastKeyEventTime;
+    if (latency < 2000) { // Ignore long pauses as latencies
+        state.keystrokeLatencies.push(latency);
+    }
+  }
+  state.lastKeyEventTime = now;
+
+  // Revision Tracking
+  if (e.key === 'Backspace' || e.key === 'Delete') {
+    state.deletions++;
+    logEvent('REVISION', `Deletion detected (${e.key}).`, false);
+  } else if (e.key.length === 1) {
+    state.totalCharsTyped++;
+  }
 }
 
 function startSession() {
@@ -62,6 +98,17 @@ function startSession() {
   state.snapshotInterval = setInterval(takeRhythmSnapshot, 1000);
 }
 
+function restoreSession() {
+  const savedDraft = localStorage.getItem('hvl_draft');
+  if (savedDraft) {
+    const editor = document.getElementById('editor');
+    editor.innerHTML = savedDraft; // Restore HTML including tags
+    startSession();
+    handleInput({ target: editor }); // Update stats
+    logEvent('SESSION_RESTORED', 'Resumed from saved draft.', false);
+  }
+}
+
 function updateTimer() {
   if (!state.isSessionActive) return;
   const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
@@ -78,11 +125,9 @@ function takeRhythmSnapshot() {
   const instantWpm = wordsInWindow * 60; 
 
   let type = 'NORMAL';
-  
   if (!state.hasActivityInWindow) {
     type = 'PAUSE';
     state.currentPauseDuration++;
-    
     if (state.currentPauseDuration === 10) {
       state.pauses++;
       document.getElementById('pause-count').innerText = state.pauses;
@@ -105,12 +150,9 @@ function takeRhythmSnapshot() {
 function renderSpeedGraph() {
   const graphContainer = document.getElementById('speed-graph');
   if (!graphContainer) return;
-
   graphContainer.innerHTML = state.snapshots.slice(-18).map(s => {
     const height = Math.min(Math.max((s.wpm / 200) * 80, 4), 80);
-    let colorClass = '';
-    if (s.type === 'PAUSE') colorClass = 'pause';
-    if (s.type === 'ANOMALY') colorClass = 'anomaly';
+    let colorClass = s.type.toLowerCase();
     return `<div class="graph-bar ${colorClass}" style="height: ${height}px"></div>`;
   }).join('');
 }
@@ -119,7 +161,9 @@ function handleInput(e) {
   if (!state.isSessionActive) return;
   state.hasActivityInWindow = true; 
   
-  const text = e.target.innerText;
+  const editor = document.getElementById('editor');
+  const text = editor.innerText;
+  
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
   state.totalWords = words;
   document.getElementById('word-count').innerText = `${words} words`;
@@ -133,6 +177,9 @@ function handleInput(e) {
   document.getElementById('wpm').innerText = `${state.currentWpm} WPM`;
 
   scanForCliches(text);
+  
+  // Auto-save HTML to preserve highlights
+  localStorage.setItem('hvl_draft', editor.innerHTML);
 }
 
 function handlePaste(e) {
@@ -153,11 +200,23 @@ function handleTextSelection() {
 }
 
 function tagSelection(hc) {
-  const selection = window.getSelection().toString();
-  if (selection) {
-    state.tags.push({ hc, text: selection });
+  const selection = window.getSelection();
+  if (selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0);
+    const span = document.createElement('span');
+    span.className = 'hc-highlight';
+    span.setAttribute('data-hc', hc);
+    span.textContent = selection.toString();
+    
+    range.deleteContents();
+    range.insertNode(span);
+    
+    state.tags.push({ hc, text: span.textContent });
     logEvent('HC_TAG', `Applied ${hc}.`, false);
     document.getElementById('hc-menu').classList.add('hidden');
+    
+    // Save state after tagging
+    localStorage.setItem('hvl_draft', document.getElementById('editor').innerHTML);
   }
 }
 
@@ -199,7 +258,7 @@ function renderFinalReport() {
             }).join('')}
         </div>
         <h3>Final Manuscript</h3>
-        <div class="final-essay">${document.getElementById('editor').innerText}</div>
+        <div class="final-essay">${document.getElementById('editor').innerHTML}</div>
         
         <h3>Full Process Log</h3>
         <div class="flag-alerts" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
@@ -208,7 +267,7 @@ function renderFinalReport() {
 
         <div style="margin-top: 2rem; text-align: center;">
             <button onclick="window.print()" class="btn-primary">Print Report</button>
-            <button onclick="location.reload()" class="btn-secondary">Close</button>
+            <button onclick="localStorage.removeItem('hvl_draft'); location.reload();" class="btn-secondary">New Session</button>
         </div>
       </div>
     </div>
@@ -218,8 +277,6 @@ function renderFinalReport() {
 
 function logEvent(type, message, isAnomaly) {
   const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  
-  // FIXED: Store the isAnomaly status with the event
   state.events.push({ type, message, time: timestamp, isAnomaly });
   
   if (isAnomaly) {

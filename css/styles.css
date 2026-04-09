@@ -163,8 +163,8 @@ header {
     border-radius: 4px;
     padding: 10px;
     margin-bottom: 1.5rem;
-    overflow: hidden; /* Remove scrollbar */
-    justify-content: flex-end; /* Keep newest bars to the right */
+    overflow: hidden;
+    justify-content: flex-end;
 }
 
 .graph-bar {
@@ -179,7 +179,7 @@ header {
 .graph-bar.pause { background: var(--mu-ash); opacity: 0.3; }
 .graph-bar.anomaly { background: var(--mu-tangerine); box-shadow: 0 0 8px rgba(240, 135, 30, 0.4); }
 
-/* HC Menu */
+/* HC Menu & Highlighting */
 .hc-menu {
     background: var(--mu-white);
     border: 1px solid var(--mu-ash);
@@ -198,6 +198,16 @@ header {
     border-radius: 4px;
     font-size: 0.75rem;
     cursor: pointer;
+}
+
+.hc-tag:hover {
+    background: var(--mu-clay);
+    color: var(--mu-white);
+}
+
+.hc-highlight {
+    background-color: rgba(144, 81, 18, 0.1);
+    border-bottom: 2px dashed var(--mu-clay);
 }
 
 /* Sidebar Cards */
