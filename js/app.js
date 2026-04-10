@@ -228,51 +228,99 @@ function finishSession() {
 }
 
 function renderFinalReport() {
+  const churnRate = state.totalCharsTyped > 0 ? ((state.deletions / state.totalCharsTyped) * 100).toFixed(1) : 0;
+  const avgLatency = state.keystrokeLatencies.length > 0 ? (state.keystrokeLatencies.reduce((a, b) => a + b, 0) / state.keystrokeLatencies.length).toFixed(0) : 0;
+  const latencyVariance = calculateVariance(state.keystrokeLatencies);
+  const authenticityScore = calculateAuthenticityScore(churnRate, latencyVariance);
+
   const reportHtml = `
     <div class="modal-overlay">
       <div class="modal-content">
-        <div class="report-header">
+        <div class="report-header" style="text-align: center; border-bottom: 2px solid var(--mu-obsidian); padding-bottom: 2rem; margin-bottom: 2rem;">
             <div class="seal-badge"></div>
             <h1>The Authorship Seal</h1>
             <p>Verification of Human Intellectual Effort</p>
+            <div style="font-size: 3rem; font-weight: 800; color: var(--mu-clay); margin-top: 1rem;">
+                ${authenticityScore}% <span style="font-size: 1rem; color: var(--mu-slate);">Authenticity Score</span>
+            </div>
         </div>
+        
         <div class="report-grid">
             <div class="report-section">
-                <h3>Forensic Audit</h3>
-                <p>Words: ${state.totalWords} (${state.uniqueWords} unique)</p>
-                <p>Time: ${document.getElementById('timer').innerText}</p>
-                <p>Anomalies: ${state.flagCount}</p>
+                <h3>Behavioral Biometrics</h3>
+                <div class="stat-row"><span>Avg. Keystroke Latency:</span> <strong>${avgLatency}ms</strong></div>
+                <div class="stat-row"><span>Rhythm Consistency (Variance):</span> <strong>${latencyVariance}ms</strong></div>
+                <div class="stat-row"><span>Revision Churn Rate:</span> <strong>${churnRate}%</strong></div>
+                <p style="font-size: 0.75rem; color: var(--mu-slate); margin-top: 0.5rem;">
+                    *High churn and moderate latency variance are strong human signals.
+                </p>
             </div>
             <div class="report-section">
-                <h3>Rhythm Profile</h3>
-                <p>Avg WPM: ${state.currentWpm}</p>
-                <p>Deep Pauses: ${state.pauses}</p>
-                <p>HC Tags: ${state.tags.length}</p>
+                <h3>Forensic Audit</h3>
+                <div class="stat-row"><span>Total Words:</span> <strong>${state.totalWords}</strong></div>
+                <div class="stat-row"><span>Unique Vocabulary:</span> <strong>${state.uniqueWords}</strong></div>
+                <div class="stat-row"><span>Session Duration:</span> <strong>${document.getElementById('timer').innerText}</strong></div>
+                <div class="stat-row"><span>Process Anomalies:</span> <strong style="color: ${state.flagCount > 0 ? 'var(--mu-tangerine)' : 'var(--mu-clay)'}">${state.flagCount}</strong></div>
             </div>
         </div>
-        <h3>Rhythm Graph (Full History)</h3>
-        <div class="speed-graph" style="height: 100px; display: flex; align-items: flex-end; gap: 2px; background: #f2f2f2; padding: 10px; overflow-x: auto; margin-bottom: 2rem;">
+
+        <h3>Writing Timeline (WPM Over Time)</h3>
+        <div class="speed-graph" style="height: 120px; display: flex; align-items: flex-end; gap: 2px; background: #f2f2f2; padding: 10px; overflow-x: auto; margin-bottom: 2rem; border: 1px solid var(--mu-ash);">
             ${state.snapshots.map(s => {
-                const height = Math.min(Math.max((s.wpm / 200) * 80, 4), 80);
-                return `<div class="graph-bar ${s.type.toLowerCase()}" style="height: ${height}px; width: 6px; flex-shrink: 0;"></div>`;
+                const height = Math.min(Math.max((s.wpm / 200) * 100, 4), 100);
+                return `<div class="graph-bar ${s.type.toLowerCase()}" style="height: ${height}px; width: 8px; flex-shrink: 0;" title="${s.wpm} WPM"></div>`;
             }).join('')}
         </div>
+
         <h3>Final Manuscript</h3>
-        <div class="final-essay">${document.getElementById('editor').innerHTML}</div>
+        <div class="final-essay" style="border: 2px solid var(--mu-ash); border-radius: 4px; padding: 2rem; background: #fff;">${document.getElementById('editor').innerHTML}</div>
         
-        <h3>Full Process Log</h3>
-        <div class="flag-alerts" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">
-            ${state.events.map(e => `<div><strong>${e.time}</strong>: ${e.message}</div>`).join('')}
+        <h3 style="margin-top: 2rem;">Process Event Log</h3>
+        <div class="flag-alerts" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
+            ${state.events.map(e => `
+                <div style="padding: 4px 0; border-bottom: 1px solid #eee; font-size: 0.8rem;">
+                    <strong style="color: var(--mu-slate);">${e.time}</strong> — 
+                    <span style="color: ${e.isAnomaly ? 'var(--mu-tangerine)' : 'var(--mu-clay)'}">${e.message}</span>
+                </div>
+            `).join('')}
         </div>
 
-        <div style="margin-top: 2rem; text-align: center;">
-            <button onclick="window.print()" class="btn-primary">Print Report</button>
-            <button onclick="localStorage.removeItem('hvl_draft'); location.reload();" class="btn-secondary">New Session</button>
+        <div style="margin-top: 3rem; text-align: center; border-top: 1px solid var(--mu-ash); padding-top: 2rem;">
+            <button onclick="window.print()" class="btn-primary">Export Official Report (PDF)</button>
+            <button onclick="if(confirm('Start new session? Current draft will be cleared.')) { localStorage.removeItem('hvl_draft'); location.reload(); }" class="btn-secondary">New Session</button>
         </div>
       </div>
     </div>
   `;
   document.body.insertAdjacentHTML('beforeend', reportHtml);
+}
+
+function calculateVariance(latencies) {
+  if (latencies.length < 2) return 0;
+  const mean = latencies.reduce((a, b) => a + b, 0) / latencies.length;
+  const squareDiffs = latencies.map(l => Math.pow(l - mean, 2));
+  const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
+  return Math.sqrt(avgSquareDiff).toFixed(0);
+}
+
+function calculateAuthenticityScore(churn, variance) {
+  let score = 85; // Base score for a started session
+  
+  // Reward human-like variance (humans aren't metronomes)
+  if (variance > 30 && variance < 200) score += 5;
+  if (variance < 10) score -= 15; // Too robotic
+
+  // Reward revision
+  score += Math.min(parseFloat(churn), 15);
+
+  // Penalize anomalies
+  score -= (state.flagCount * 10);
+  
+  // Penalize cliches (AI tendency)
+  const clicheCount = document.querySelectorAll('.alert-item').length;
+  score -= (clicheCount * 2);
+
+  return Math.min(Math.max(score, 0), 100).toFixed(0);
 }
 
 function logEvent(type, message, isAnomaly) {
