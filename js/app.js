@@ -61,6 +61,109 @@ function init() {
   }
 }
 
+function handleKeydown(e) {
+  if (!state.isSessionActive) return;
+
+  const now = Date.now();
+  
+  // Keystroke Dynamics
+  if (state.lastKeyEventTime) {
+    const latency = now - state.lastKeyEventTime;
+    if (latency < 2000) { // Ignore long pauses as latencies
+        state.keystrokeLatencies.push(latency);
+    }
+  }
+  state.lastKeyEventTime = now;
+
+  // Revision Tracking
+  if (e.key === 'Backspace' || e.key === 'Delete') {
+    state.deletions++;
+    logEvent('REVISION', `Deletion detected (${e.key}).`, false);
+  } else if (e.key.length === 1) {
+    state.totalCharsTyped++;
+  }
+}
+
+function startSession() {
+  state.isSessionActive = true;
+  state.startTime = Date.now();
+  
+  document.getElementById('session-controls').classList.add('hidden');
+  document.getElementById('stats-bar').classList.remove('hidden');
+  
+  const editor = document.getElementById('editor');
+  editor.classList.remove('disabled');
+  editor.setAttribute('contenteditable', 'true');
+  editor.focus();
+
+  for (let i = 0; i < 15; i++) {
+    state.snapshots.push({ wpm: 0, type: 'NORMAL' });
+  }
+  renderSpeedGraph();
+
+  state.timerInterval = setInterval(updateTimer, 1000);
+  state.snapshotInterval = setInterval(takeRhythmSnapshot, 1000);
+}
+
+function restoreSession() {
+  const savedDraft = localStorage.getItem('hvl_draft');
+  if (savedDraft) {
+    const editor = document.getElementById('editor');
+    editor.innerHTML = savedDraft; // Restore HTML including tags
+    startSession();
+    handleInput({ target: editor }); // Update stats
+    logEvent('SESSION_RESTORED', 'Resumed from saved draft.', false);
+  }
+}
+
+function updateTimer() {
+  if (!state.isSessionActive) return;
+  const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+  const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+  const secs = (elapsed % 60).toString().padStart(2, '0');
+  document.getElementById('timer').innerText = `${mins}:${secs}`;
+}
+
+function takeRhythmSnapshot() {
+  if (!state.isSessionActive) return;
+
+  const currentWords = state.totalWords;
+  const wordsInWindow = currentWords - state.lastSnapshotWordCount;
+  const instantWpm = wordsInWindow * 60; 
+
+  let type = 'NORMAL';
+  if (!state.hasActivityInWindow) {
+    type = 'PAUSE';
+    state.currentPauseDuration++;
+    if (state.currentPauseDuration === 10) {
+      state.pauses++;
+      document.getElementById('pause-count').innerText = state.pauses;
+      logEvent('DEEP_THOUGHT', 'Reflecting for 10+ seconds.', false); 
+    }
+  } else {
+    state.currentPauseDuration = 0; 
+    if (instantWpm > 140) {
+      type = 'ANOMALY';
+      logEvent('SPEED_BURST', `Burst of ${instantWpm} WPM.`, true); 
+    }
+  }
+
+  state.snapshots.push({ wpm: instantWpm, type: type });
+  state.lastSnapshotWordCount = currentWords;
+  state.hasActivityInWindow = false; 
+  renderSpeedGraph();
+}
+
+function renderSpeedGraph() {
+  const graphContainer = document.getElementById('speed-graph');
+  if (!graphContainer) return;
+  graphContainer.innerHTML = state.snapshots.slice(-18).map(s => {
+    const height = Math.min(Math.max((s.wpm / 200) * 80, 4), 80);
+    let colorClass = s.type.toLowerCase();
+    return `<div class="graph-bar ${colorClass}" style="height: ${height}px"></div>`;
+  }).join('');
+}
+
 function handleVisibilityChange() {
   if (!state.isSessionActive) return;
   
