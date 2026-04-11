@@ -5,18 +5,18 @@
 > **Keep this block short and current.** Update it at the end of every session.
 > This is the first thing Gemini reads — make it worth reading.
 
-**Status**: STARTED
-**Active milestone**: M1 — The "Human" Editor (COMPLETED)
-**Last session**: 2026-03-27
+**Status**: COMPLETED
+**Active milestone**: M3 — The "Authenticity Report" (COMPLETED)
+**Last session**: 2026-04-12
 
 **Next actions**:
-- [ ] Refine the "Soft Flag" logic in `js/app.js` to store all flags for the final report
-- [ ] Implement timestamped "Writing Timeline" snapshots in `localStorage` (M2)
-- [ ] Design the "Authenticity Report" layout (M3)
+- [x] Implement Behavioral Fingerprinting (Keystroke Dynamics)
+- [x] Implement Revision Mapping (Churn Rate)
+- [x] Finalize Authenticity Score algorithm
+- [x] Deploy to GitHub Pages (User action required)
 
 **Open questions**:
-- [x] How should we handle "Copy-Paste" events in M2—should we block them or just flag them? (Decision: Soft Flag)
-- [ ] Which specific AI clichés should we prioritize for the M1 highlight?
+- [x] How should we weight "Revision Churn" in the authenticity score? (Decision: 1:1 ratio up to 15%)
 
 ---
 
@@ -52,30 +52,55 @@
 *A background engine that tracks typing speed, bursts of activity, and pauses to prove the essay was written by a human.*
 
 **Values checklist**:
-- [ ] Agency: Empowers users to prove their own authorship
-- [x] Transparency: Disclosure of what data is being tracked (speed/timing)
+- [x] Agency: Empowers users to prove their own authorship
+- [x] Transparency: Disclosure of what data is being tracked (speed/timing/keystrokes)
 
 **Acceptance criteria**:
-- [/] Real-time "Words Per Minute" (WPM) tracking (Implemented basic calc)
+- [x] Real-time "Words Per Minute" (WPM) tracking
 - [x] Detection of "Soft Flag" anomalies (pastes over 50 characters)
-- [ ] Saving of a timestamped "Writing Timeline" to `localStorage`
+- [x] **New**: Keystroke dynamics tracking (latency and variance)
+- [x] **New**: Revision mapping (backspace/delete tracking)
 
 ### M3 — The "Authenticity Report"
 
 *A visual summary of the writing process that an applicant can review and share.*
 
 **Values checklist**:
-- [ ] Learning: Reflective summary of the writing journey
-- [ ] Transparency: Clearly shows the "Human vs. AI" signals in the process
+- [x] Learning: Reflective summary of the writing journey
+- [x] Transparency: Clearly shows the "Human vs. AI" signals in the process
 
 **Acceptance criteria**:
-- [ ] A "Timeline of Thought" chart showing writing progress over time
-- [ ] An "Authenticity Score" based on consistency of speed and lack of cliches
-- [ ] A printable/exportable summary for Admissions submission
+- [x] A "Timeline of Thought" chart showing writing progress over time
+- [x] An "Authenticity Score" based on consistency of speed, lack of cliches, and revision churn.
+- [x] A printable/exportable summary for Admissions submission
 
 ---
 
 ## Session Log
+
+---
+
+### 2026-04-10: Finalizing M3 & Advanced Metrics
+
+**AI Tool(s) Used**: Gemini CLI
+**Purpose**: Completion of the Authenticity Report and scoring algorithm.
+**Modifications & Verification**: 
+- Implemented `renderFinalReport` with full visual layout.
+- Added Authenticity Score calculation (Revision + Variance - Anomalies).
+- Verified that PDF export works via `window.print()`.
+**Learning Reflection**: Seeing the "Revision Churn" as a positive metric changes the student's perspective on editing; it becomes a badge of honor rather than a sign of failure.
+
+---
+
+### 2026-04-09: Behavioral Fingerprinting
+
+**AI Tool(s) Used**: Gemini CLI
+**Purpose**: Implementing advanced forensic tracking.
+**Modifications & Verification**: 
+- Added `handleKeydown` to track millisecond latencies.
+- Added revision tracking for backspaces and deletes.
+- Integrated metrics into the state object for M3.
+**Learning Reflection**: Behavioral biometrics provide a much higher level of proof than simple WPM, making the tool more robust against sophisticated AI injections.
 
 ---
 
@@ -93,15 +118,6 @@
 **Learning Reflection**: Focusing on the sidebar for alerts rather than inline highlighting keeps the focus on the *thought process* rather than just "fixing" the text, which aligns with Minerva's active learning values.
 **Session Link/Context**: Implementation of M1 and start of M2.
 
----
-
-### 2026-03-27: Project Setup
-
-**AI Tool(s) Used**: Gemini CLI
-**Purpose**: Ideation and project initialization
-**Modifications & Verification**: Defined "Human Voice Lab" identity and milestones. Updated GEMINI.md and SCRATCHPAD.md. Logged Decision 003 (Soft Flag for Paste).
-**Learning Reflection**: Collaborative ideation helped focus the project on the intersection of technical tracking and ethical authorship.
-**Session Link/Context**: Initial setup conversation.
 
 ---
 

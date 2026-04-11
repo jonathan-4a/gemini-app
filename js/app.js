@@ -29,7 +29,12 @@ const state = {
   keystrokeLatencies: [],
   deletions: 0,
   totalCharsTyped: 0,
-  revisionHistory: []
+  // Forensic Stylometry & Focus
+  focusLossCount: 0,
+  lastBlurTime: null,
+  sentenceLengths: [],
+  vocabularyRichness: 0, // Type-Token Ratio
+  perplexitySignal: 'NEUTRAL'
 };
 
 function init() {
@@ -43,6 +48,8 @@ function init() {
   editor.addEventListener('paste', handlePaste);
   editor.addEventListener('mouseup', handleTextSelection); 
 
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
   document.querySelectorAll('.hc-tag').forEach(btn => {
     btn.addEventListener('click', (e) => tagSelection(e.target.dataset.hc));
   });
@@ -54,107 +61,19 @@ function init() {
   }
 }
 
-function handleKeydown(e) {
+function handleVisibilityChange() {
   if (!state.isSessionActive) return;
-
-  const now = Date.now();
   
-  // Keystroke Dynamics
-  if (state.lastKeyEventTime) {
-    const latency = now - state.lastKeyEventTime;
-    if (latency < 2000) { // Ignore long pauses as latencies
-        state.keystrokeLatencies.push(latency);
-    }
-  }
-  state.lastKeyEventTime = now;
-
-  // Revision Tracking
-  if (e.key === 'Backspace' || e.key === 'Delete') {
-    state.deletions++;
-    logEvent('REVISION', `Deletion detected (${e.key}).`, false);
-  } else if (e.key.length === 1) {
-    state.totalCharsTyped++;
-  }
-}
-
-function startSession() {
-  state.isSessionActive = true;
-  state.startTime = Date.now();
-  
-  document.getElementById('session-controls').classList.add('hidden');
-  document.getElementById('stats-bar').classList.remove('hidden');
-  
-  const editor = document.getElementById('editor');
-  editor.classList.remove('disabled');
-  editor.setAttribute('contenteditable', 'true');
-  editor.focus();
-
-  for (let i = 0; i < 15; i++) {
-    state.snapshots.push({ wpm: 0, type: 'NORMAL' });
-  }
-  renderSpeedGraph();
-
-  state.timerInterval = setInterval(updateTimer, 1000);
-  state.snapshotInterval = setInterval(takeRhythmSnapshot, 1000);
-}
-
-function restoreSession() {
-  const savedDraft = localStorage.getItem('hvl_draft');
-  if (savedDraft) {
-    const editor = document.getElementById('editor');
-    editor.innerHTML = savedDraft; // Restore HTML including tags
-    startSession();
-    handleInput({ target: editor }); // Update stats
-    logEvent('SESSION_RESTORED', 'Resumed from saved draft.', false);
-  }
-}
-
-function updateTimer() {
-  if (!state.isSessionActive) return;
-  const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
-  const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
-  const secs = (elapsed % 60).toString().padStart(2, '0');
-  document.getElementById('timer').innerText = `${mins}:${secs}`;
-}
-
-function takeRhythmSnapshot() {
-  if (!state.isSessionActive) return;
-
-  const currentWords = state.totalWords;
-  const wordsInWindow = currentWords - state.lastSnapshotWordCount;
-  const instantWpm = wordsInWindow * 60; 
-
-  let type = 'NORMAL';
-  if (!state.hasActivityInWindow) {
-    type = 'PAUSE';
-    state.currentPauseDuration++;
-    if (state.currentPauseDuration === 10) {
-      state.pauses++;
-      document.getElementById('pause-count').innerText = state.pauses;
-      logEvent('DEEP_THOUGHT', 'Reflecting for 10+ seconds.', false); 
-    }
+  if (document.hidden) {
+    state.lastBlurTime = Date.now();
+    state.focusLossCount++;
+    logEvent('FOCUS_LOST', 'User switched tabs/windows.', true);
   } else {
-    state.currentPauseDuration = 0; 
-    if (instantWpm > 140) {
-      type = 'ANOMALY';
-      logEvent('SPEED_BURST', `Burst of ${instantWpm} WPM.`, true); 
+    if (state.lastBlurTime) {
+      const awayDuration = Math.round((Date.now() - state.lastBlurTime) / 1000);
+      logEvent('FOCUS_REGAINED', `User returned after ${awayDuration}s.`, false);
     }
   }
-
-  state.snapshots.push({ wpm: instantWpm, type: type });
-  state.lastSnapshotWordCount = currentWords;
-  state.hasActivityInWindow = false; 
-  renderSpeedGraph();
-}
-
-function renderSpeedGraph() {
-  const graphContainer = document.getElementById('speed-graph');
-  if (!graphContainer) return;
-  graphContainer.innerHTML = state.snapshots.slice(-18).map(s => {
-    const height = Math.min(Math.max((s.wpm / 200) * 80, 4), 80);
-    let colorClass = s.type.toLowerCase();
-    return `<div class="graph-bar ${colorClass}" style="height: ${height}px"></div>`;
-  }).join('');
 }
 
 function handleInput(e) {
@@ -171,6 +90,13 @@ function handleInput(e) {
   const wordsArr = text.toLowerCase().match(/\b(\w+)\b/g) || [];
   state.uniqueWords = new Set(wordsArr).size;
   document.getElementById('unique-words').innerText = `${state.uniqueWords} unique`;
+
+  // Stylometry: Vocabulary Richness (TTR)
+  state.vocabularyRichness = words > 0 ? (state.uniqueWords / words).toFixed(3) : 0;
+
+  // Stylometry: Sentence Variance
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  state.sentenceLengths = sentences.map(s => s.trim().split(/\s+/).length);
   
   const elapsedMins = (Date.now() - state.startTime) / 60000;
   state.currentWpm = Math.round(words / (elapsedMins || 1));
@@ -231,7 +157,8 @@ function renderFinalReport() {
   const churnRate = state.totalCharsTyped > 0 ? ((state.deletions / state.totalCharsTyped) * 100).toFixed(1) : 0;
   const avgLatency = state.keystrokeLatencies.length > 0 ? (state.keystrokeLatencies.reduce((a, b) => a + b, 0) / state.keystrokeLatencies.length).toFixed(0) : 0;
   const latencyVariance = calculateVariance(state.keystrokeLatencies);
-  const authenticityScore = calculateAuthenticityScore(churnRate, latencyVariance);
+  const sentenceVariance = calculateVariance(state.sentenceLengths);
+  const authenticityScore = calculateAuthenticityScore(churnRate, latencyVariance, sentenceVariance);
 
   const reportHtml = `
     <div class="modal-overlay">
@@ -249,22 +176,20 @@ function renderFinalReport() {
             <div class="report-section">
                 <h3>Behavioral Biometrics</h3>
                 <div class="stat-row"><span>Avg. Keystroke Latency:</span> <strong>${avgLatency}ms</strong></div>
-                <div class="stat-row"><span>Rhythm Consistency (Variance):</span> <strong>${latencyVariance}ms</strong></div>
+                <div class="stat-row"><span>Rhythm Variance:</span> <strong>${latencyVariance}ms</strong></div>
                 <div class="stat-row"><span>Revision Churn Rate:</span> <strong>${churnRate}%</strong></div>
-                <p style="font-size: 0.75rem; color: var(--mu-slate); margin-top: 0.5rem;">
-                    *High churn and moderate latency variance are strong human signals.
-                </p>
+                <div class="stat-row"><span>Focus Interruptions:</span> <strong style="color: ${state.focusLossCount > 0 ? 'var(--mu-tangerine)' : 'var(--mu-clay)'}">${state.focusLossCount}</strong></div>
             </div>
             <div class="report-section">
-                <h3>Forensic Audit</h3>
+                <h3>Linguistic Stylometry</h3>
+                <div class="stat-row"><span>Vocabulary Richness (TTR):</span> <strong>${state.vocabularyRichness}</strong></div>
+                <div class="stat-row"><span>Sentence Len. Variance:</span> <strong>${sentenceVariance}</strong></div>
                 <div class="stat-row"><span>Total Words:</span> <strong>${state.totalWords}</strong></div>
                 <div class="stat-row"><span>Unique Vocabulary:</span> <strong>${state.uniqueWords}</strong></div>
-                <div class="stat-row"><span>Session Duration:</span> <strong>${document.getElementById('timer').innerText}</strong></div>
-                <div class="stat-row"><span>Process Anomalies:</span> <strong style="color: ${state.flagCount > 0 ? 'var(--mu-tangerine)' : 'var(--mu-clay)'}">${state.flagCount}</strong></div>
             </div>
         </div>
 
-        <h3>Writing Timeline (WPM Over Time)</h3>
+        <h3>Writing Timeline (WPM & Flow)</h3>
         <div class="speed-graph" style="height: 120px; display: flex; align-items: flex-end; gap: 2px; background: #f2f2f2; padding: 10px; overflow-x: auto; margin-bottom: 2rem; border: 1px solid var(--mu-ash);">
             ${state.snapshots.map(s => {
                 const height = Math.min(Math.max((s.wpm / 200) * 100, 4), 100);
@@ -275,7 +200,7 @@ function renderFinalReport() {
         <h3>Final Manuscript</h3>
         <div class="final-essay" style="border: 2px solid var(--mu-ash); border-radius: 4px; padding: 2rem; background: #fff;">${document.getElementById('editor').innerHTML}</div>
         
-        <h3 style="margin-top: 2rem;">Process Event Log</h3>
+        <h3 style="margin-top: 2rem;">Forensic Process Log</h3>
         <div class="flag-alerts" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
             ${state.events.map(e => `
                 <div style="padding: 4px 0; border-bottom: 1px solid #eee; font-size: 0.8rem;">
@@ -295,28 +220,38 @@ function renderFinalReport() {
   document.body.insertAdjacentHTML('beforeend', reportHtml);
 }
 
-function calculateVariance(latencies) {
-  if (latencies.length < 2) return 0;
-  const mean = latencies.reduce((a, b) => a + b, 0) / latencies.length;
-  const squareDiffs = latencies.map(l => Math.pow(l - mean, 2));
+function calculateVariance(values) {
+  if (!values || values.length < 2) return 0;
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const squareDiffs = values.map(v => Math.pow(v - mean, 2));
   const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
-  return Math.sqrt(avgSquareDiff).toFixed(0);
+  return Math.sqrt(avgSquareDiff).toFixed(1);
 }
 
-function calculateAuthenticityScore(churn, variance) {
-  let score = 85; // Base score for a started session
+function calculateAuthenticityScore(churn, latencyVariance, sentenceVariance) {
+  let score = 80; // Adjusted base for more rigorous scoring
   
-  // Reward human-like variance (humans aren't metronomes)
-  if (variance > 30 && variance < 200) score += 5;
-  if (variance < 10) score -= 15; // Too robotic
+  // Reward human-like keystroke variance
+  if (latencyVariance > 30 && latencyVariance < 200) score += 5;
+  if (latencyVariance < 15) score -= 10; // Too robotic
+
+  // Reward Sentence Variance (Natural prose has varying lengths)
+  if (sentenceVariance > 5) score += 5;
+  if (sentenceVariance < 2 && state.totalWords > 50) score -= 10;
+
+  // Reward Vocabulary Richness
+  if (state.vocabularyRichness > 0.6) score += 5;
 
   // Reward revision
   score += Math.min(parseFloat(churn), 15);
 
-  // Penalize anomalies
-  score -= (state.flagCount * 10);
+  // Penalize Focus Loss (Tab switching)
+  score -= (state.focusLossCount * 5);
+
+  // Penalize anomalies (Pastes)
+  score -= (state.flagCount * 15);
   
-  // Penalize cliches (AI tendency)
+  // Penalize cliches
   const clicheCount = document.querySelectorAll('.alert-item').length;
   score -= (clicheCount * 2);
 

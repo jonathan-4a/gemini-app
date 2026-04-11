@@ -59,3 +59,33 @@
 - **Values**: Aligns with **Human Agency** and **Clarity over Cleverness**.
 
 <!-- Add new decisions below, incrementing the number. -->
+
+## Decision 004 — Behavioral Biometrics & Revision Mapping
+
+**Date**: 2026-04-09
+**Decision**: Implement Keystroke Dynamics (latency tracking) and Revision Mapping (churn rate).
+**Rationale**: To provide high-fidelity evidence of human authorship, we must move beyond simple WPM tracking. Capturing the millisecond "rhythm" of typing and the "churn" of revision (backspaces/deletes) provides a unique behavioral fingerprint that is nearly impossible for current AI to replicate.
+**Alternatives considered**: Traditional WPM only — too easy to spoof with automated injection; Keylogging — too invasive and privacy-violating.
+**Trade-offs**: We gain a much more robust "Authenticity Score." We give up some UI simplicity to explain these advanced metrics to the user.
+
+**Guardrails Alignment**:
+- **Privacy & IP**: Latency data is aggregated into variance and average metrics; no raw key-by-key timing log is exported unless the user generates the report.
+- **Disclosure**: The "Writing Rhythm" card in the sidebar clearly shows when these metrics are being captured.
+- **Responsibility**: The user remains the author; the tool simply provides a "forensic mirror" of their existing process.
+- **Bias & Trust**: We build trust by rewarding the *struggle* of writing (revision) rather than just the final, polished output.
+- **Values**: Aligns with **Human Agency** and **Learning Orientation**.
+
+## Decision 005 — Authenticity Scoring Algorithm
+
+**Date**: 2026-04-10
+**Decision**: Implement a weighted "Authenticity Score" that rewards human-like variability and revision.
+**Rationale**: Users and admissions staff need a clear, high-level indicator of the "human signal" in a piece of writing. By weighting revision churn positively and robotic consistency negatively, we create a metric that values the *process* of thought.
+**Alternatives considered**: A simple "Pass/Fail" flag — too binary and doesn't capture the nuances of human effort.
+**Trade-offs**: We gain a powerful summary metric. We give up some "neutrality"—the algorithm makes a value judgment about what "human writing" looks like.
+
+**Guardrails Alignment**:
+- **Privacy & IP**: The score is calculated entirely on the client side.
+- **Disclosure**: The final report explains *how* the score was calculated (e.g., "High churn and moderate latency variance are strong human signals").
+- **Responsibility**: The human admissions officer remains the final judge; the score is a piece of evidence, not a verdict.
+- **Bias & Trust**: The algorithm is transparent and focuses on behavioral signals rather than linguistic ones, which reduces bias against non-native speakers who may have unique vocabulary patterns.
+- **Values**: Aligns with **Human-Centered Accountability**.
